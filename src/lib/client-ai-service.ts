@@ -18,7 +18,7 @@ export async function analyzeImageClient(file: File): Promise<Partial<PhotoMetad
                 if (errorData.error) {
                     errorMessage = errorData.error;
                 }
-            } catch (e) {
+            } catch {
                 // Ignore JSON parse error if response is not JSON
             }
             throw new Error(errorMessage);
@@ -26,7 +26,7 @@ export async function analyzeImageClient(file: File): Promise<Partial<PhotoMetad
 
         const data = await response.json();
         return data; // unique metadata from AI
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("AI Analysis error:", error);
         throw error;
     }

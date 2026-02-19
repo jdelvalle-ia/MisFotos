@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Key, RotateCw, Wifi, WifiOff } from "lucide-react";
+import { Key, RotateCw, Wifi } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ConnectionStatusWidget() {
@@ -22,7 +22,7 @@ export function ConnectionStatusWidget() {
                 setStatus("error");
                 setMessage(data.message || "Error desconocido");
             }
-        } catch (error) {
+        } catch {
             setStatus("error");
             setMessage("Error de red al conectar con el servidor");
         }

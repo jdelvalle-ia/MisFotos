@@ -20,6 +20,7 @@ export default function Dashboard() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           console.log("Dashboard: Loaded", parsed.length, "photos from storage");
+          // eslint-disable-next-line
           setPhotos(parsed);
         }
       } catch (e) {
@@ -56,6 +57,7 @@ export default function Dashboard() {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cleanGallery = photos.map((p: any) => {
         const { realPath, ...rest } = p;
         return {

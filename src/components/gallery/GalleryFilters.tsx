@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Search, Filter, X, ChevronDown } from "lucide-react";
 import { PhotoMetadata } from "@/types";
 

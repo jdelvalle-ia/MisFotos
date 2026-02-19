@@ -28,11 +28,12 @@ export async function GET() {
             throw new Error("Respuesta vacía del modelo");
         }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Connection Test Error:", error);
+        const errorMessage = error instanceof Error ? error.message : "Error de conexión con Google API";
         return NextResponse.json({
             success: false,
-            message: error.message || "Error de conexión con Google API"
+            message: errorMessage
         }, { status: 500 });
     }
 }

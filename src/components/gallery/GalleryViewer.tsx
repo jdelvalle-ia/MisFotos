@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { PhotoMetadata } from "@/types";
 import { ChevronLeft, ChevronRight, Info, Tag, Calendar, Monitor, FileType, HardDrive, Download } from "lucide-react";
@@ -9,16 +9,22 @@ interface GalleryViewerProps {
 
 export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [prevPhotos, setPrevPhotos] = useState(photos);
 
-    const handleNext = () => {
+    if (photos !== prevPhotos) {
+        setPrevPhotos(photos);
+        setCurrentIndex(0);
+    }
+
+    const handleNext = useCallback(() => {
         if (photos.length === 0) return;
         setCurrentIndex((prev) => (prev + 1) % photos.length);
-    };
+    }, [photos.length]);
 
-    const handlePrev = () => {
+    const handlePrev = useCallback(() => {
         if (photos.length === 0) return;
         setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
-    };
+    }, [photos.length]);
 
     // Handle keyboard navigation
     useEffect(() => {
@@ -28,7 +34,7 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [photos.length]);
+    }, [handleNext, handlePrev]);
 
     // Helper to get image source
     const getImageSrc = (p: Partial<PhotoMetadata>) => {
@@ -37,10 +43,7 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
         return `/api/images?path=${encodeURIComponent(p.path)}`;
     };
 
-    // Reset index when photos array changes (e.g. filtering)
-    useEffect(() => {
-        setCurrentIndex(0);
-    }, [photos]);
+
 
     if (!photos || photos.length === 0) {
         return (

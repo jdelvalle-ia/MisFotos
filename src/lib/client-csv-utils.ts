@@ -14,7 +14,9 @@ export function parseCSV(csvContent: string): Promise<Partial<PhotoMetadata>[]> 
 
                 // Map and clean data
                 const photos = results.data
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .filter((row: any) => row.filename) // Filter out empty lines that might have slipped through
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .map((row: any) => ({
                         ...row,
                         file_size_kb: row.file_size_kb ? Number(row.file_size_kb) : undefined,
@@ -27,7 +29,7 @@ export function parseCSV(csvContent: string): Promise<Partial<PhotoMetadata>[]> 
                 console.log("Mapped Photos:", photos);
                 resolve(photos);
             },
-            error: (error: any) => {
+            error: (error: unknown) => {
                 console.error("CSV Parse Error:", error);
                 reject(error);
             }

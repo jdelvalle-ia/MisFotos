@@ -1,0 +1,17 @@
+
+> mis-fotos@0.1.0 lint
+> eslint
+
+
+C:\Users\julia\Downloads\Proyectos\mis-fotos\src\app\page.tsx
+  60:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\julia\Downloads\Proyectos\mis-fotos\src\components\gallery\GalleryManager.tsx
+  161:25  warning  'fullPath' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  202:25  warning  'fullPath' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  212:26  warning  'e' is defined but never used                  @typescript-eslint/no-unused-vars
+  240:57  error    Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  357:90  error    Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+Ô£û 6 problems (3 errors, 3 warnings)
+

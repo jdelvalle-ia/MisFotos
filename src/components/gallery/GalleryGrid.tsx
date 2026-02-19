@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { PhotoMetadata } from "@/types";
-import { Loader2, ImageOff } from "lucide-react";
+import { ImageOff } from "lucide-react";
 
 interface GalleryGridProps {
     photos: Partial<PhotoMetadata>[];

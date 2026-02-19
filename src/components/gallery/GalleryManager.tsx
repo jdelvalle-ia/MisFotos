@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FolderPlus, Download, X, Loader2, FileText, Image as ImageIcon } from "lucide-react";
+import { FolderPlus, Download, X, FileText, Image as ImageIcon } from "lucide-react";
 import { PhotoMetadata } from "@/types";
 import { parseCSV, generateCSV } from "@/lib/client-csv-utils";
 import { analyzeImageClient } from "@/lib/client-ai-service";
@@ -144,23 +144,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                 addLog(`IA Completada para ${file.name}. Etiquetas: ${aiData.tags?.length || 0}`, "success");
                 if (!aiData.description) addLog(`ADVERTENCIA: Sin descripción para ${file.name}`, "warning");
 
-                // Construct full path if base path is provided
-                const relativePath = file.webkitRelativePath || file.name;
-                let fullPath = relativePath;
 
-                if (basePath) {
-                    const normalizedBase = basePath.replace(/\\/g, '/').replace(/\/$/, '');
-                    const firstPart = relativePath.split('/')[0];
-
-                    // Specific check: if base path ends with the first folder of relative path, avoid duplication
-                    if (normalizedBase.endsWith(`/${firstPart}`)) {
-                        // Base: .../MisFotos, Relative: MisFotos/IMG... -> .../MisFotos/IMG...
-                        const remainder = relativePath.substring(firstPart.length);
-                        fullPath = `${normalizedBase}${remainder}`;
-                    } else {
-                        fullPath = `${normalizedBase}/${relativePath}`;
-                    }
-                }
 
                 newPhotos.push({
                     description: "", // Default
@@ -170,8 +154,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                     date_taken: aiData.date_taken || new Date(file.lastModified).toISOString(),
                     filename: file.name,
                     path: objectUrl, // Blob for display
-                    // @ts-ignore - Storing for export
-                    realPath: fullPath,
+
                     format: file.type.split('/')[1],
                     file_size_kb: Math.round(file.size / 1024),
                     width,
@@ -181,28 +164,14 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                     orientation: width > height ? 'horizontal' : width < height ? 'vertical' : 'square',
                 });
 
-            } catch (err: any) {
-                const errMsg = `Error analizando ${file.name}: ${err.message || "Error desconocido"}`;
+            } catch (err: unknown) {
+                const errMsg = `Error analizando ${file.name}: ${err instanceof Error ? err.message : "Error desconocido"}`;
                 console.error(errMsg, err);
                 addLog(errMsg, "error");
 
                 const objectUrl = URL.createObjectURL(file);
 
-                // Same path logic for error case
-                const relativePath = file.webkitRelativePath || file.name;
-                let fullPath = relativePath;
 
-                if (basePath) {
-                    const normalizedBase = basePath.replace(/\\/g, '/').replace(/\/$/, '');
-                    const firstPart = relativePath.split('/')[0];
-
-                    if (normalizedBase.endsWith(`/${firstPart}`)) {
-                        const remainder = relativePath.substring(firstPart.length);
-                        fullPath = `${normalizedBase}${remainder}`;
-                    } else {
-                        fullPath = `${normalizedBase}/${relativePath}`;
-                    }
-                }
 
                 // Get basic dimensions even on error if possible
                 let width = 0, height = 0;
@@ -210,13 +179,12 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                     const dims = await getImageDimensions(file);
                     width = dims.width;
                     height = dims.height;
-                } catch (e) { }
+                } catch { }
 
                 newPhotos.push({
                     filename: file.name,
                     path: objectUrl,
-                    // @ts-ignore
-                    realPath: fullPath,
+
                     file_size_kb: Math.round(file.size / 1024),
                     format: file.type.split('/')[1],
                     width,
@@ -239,6 +207,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
         }
 
         try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const cleanGallery = currentGallery.map((p: any) => {
                 const { realPath, ...rest } = p;
                 return {
@@ -261,7 +230,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             onClose();
-        } catch (err) {
+        } catch {
             setError("Error al generar el CSV.");
         }
     };
@@ -356,6 +325,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                                         input.type = 'file';
                                         input.multiple = true;
                                         input.accept = "image/*";
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                         input.onchange = (e) => handleUpdateGallery(e as any);
                                         input.click();
                                     }}>

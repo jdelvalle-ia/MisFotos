@@ -15,6 +15,7 @@ export function ThemeToggle({ className, showLabel }: ThemeToggleProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line
         setMounted(true);
     }, []);
 

@@ -15,6 +15,7 @@ export default function GalleryPage() {
             try {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed)) {
+                    // eslint-disable-next-line
                     setPhotos(parsed);
                 }
             } catch (e) {

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
-import path from 'path';
-import mime from 'mime'; // We might need to install this package
+import path from 'path'; // We might need to install this package
 
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
