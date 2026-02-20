@@ -11,7 +11,7 @@ interface GalleryGridProps {
 export function GalleryGrid({ photos = [] }: GalleryGridProps) {
     if (!photos || photos.length === 0) {
         return (
-            <div className="text-center p-20 border-2 border-dashed rounded-lg bg-muted/50">
+            <div className="text-center p-20 border-2 border-dashed rounded-2xl bg-muted/50">
                 <ImageOff className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium">No hay fotos en la galería</h3>
                 <p className="text-muted-foreground mt-2">
@@ -26,7 +26,7 @@ export function GalleryGrid({ photos = [] }: GalleryGridProps) {
             {photos.map((photo, index) => (
                 <div
                     key={`${photo.path}-${index}`}
-                    className="group relative aspect-square bg-muted rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-all cursor-pointer"
+                    className="group relative w-full aspect-square bg-muted rounded-2xl overflow-hidden border shadow-sm hover:shadow-premium transition-all duration-300 cursor-pointer hover:border-primary/50"
                 >
                     {photo.path && (
                         <Image

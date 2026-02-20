@@ -62,7 +62,7 @@ export default function GalleryPage() {
     return (
         <div className="h-[calc(100vh-theme(spacing.20))] flex flex-col">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-3xl font-bold tracking-tight">Galería Completa</h2>
+                <h2 className="text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500 drop-shadow-sm pb-1">Galería Completa</h2>
             </div>
 
             <GalleryFilters

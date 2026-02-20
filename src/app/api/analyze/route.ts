@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
         const prompt = `Analiza la imagen y devuelve un objeto JSON con la siguiente estructura.
         Si algún dato no está claro, estima o usa "Desconocido".
         NO respondas con texto plano, SOLO JSON.
+        MUY IMPORTANTE: Todo el texto generado, incluyendo descripciones, etiquetas (tags), sujetos, acciones y estados, DEBE ESTAR ESTRICTAMENTE EN ESPAÑOL.
 
         {
           "format": "jpg/png/etc",

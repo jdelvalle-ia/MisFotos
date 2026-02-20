@@ -43,6 +43,14 @@ const config: Config = {
                     DEFAULT: "hsl(var(--card))",
                     foreground: "hsl(var(--card-foreground))",
                 },
+                success: {
+                    DEFAULT: "hsl(var(--success))",
+                    foreground: "hsl(var(--success-foreground))",
+                },
+            },
+            boxShadow: {
+                'premium': '0 10px 40px -10px rgba(0,0,0,0.5)',
+                'premium-hover': '0 20px 40px -10px rgba(0,0,0,0.7)',
             },
             borderRadius: {
                 lg: "var(--radius)",

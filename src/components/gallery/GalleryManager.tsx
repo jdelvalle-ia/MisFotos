@@ -6,6 +6,7 @@ import { PhotoMetadata } from "@/types";
 import { parseCSV, generateCSV } from "@/lib/client-csv-utils";
 import { analyzeImageClient } from "@/lib/client-ai-service";
 import { compressImage } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface GalleryManagerProps {
     isOpen: boolean;
@@ -106,7 +107,14 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
+        if (!basePath.trim()) {
+            setError("Debes introducir la Ruta Base en el cuadro de texto antes de cargar imágenes.");
+            addLog("Intento de carga sin Ruta Base", "warning");
+            return;
+        }
+
         setLoading(true);
+        setError("");
         setProgress({ current: 0, total: files.length });
         addLog(`Iniciando actualización con ${files.length} archivos detectados.`, "info");
 
@@ -116,8 +124,24 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
         addLog(`Filtrado: ${imageFiles.length} imágenes válidas encontradas.`, "info");
         setProgress({ current: 0, total: imageFiles.length });
 
+        const cleanBasePath = basePath.replace(/[\\/]$/, '');
+
         for (let i = 0; i < imageFiles.length; i++) {
             const file = imageFiles[i];
+
+            const filePath = file.webkitRelativePath || file.name;
+            let finalPath = '';
+            if (filePath.includes('/')) {
+                const rootFolderMatch = filePath.split('/')[0];
+                if (cleanBasePath.endsWith(rootFolderMatch)) {
+                    finalPath = cleanBasePath + '/' + filePath.substring(rootFolderMatch.length + 1);
+                } else {
+                    finalPath = cleanBasePath + '/' + filePath;
+                }
+            } else {
+                finalPath = cleanBasePath + '/' + filePath;
+            }
+            const realPath = finalPath.replace(/\//g, '\\');
 
             try {
                 const objectUrl = URL.createObjectURL(file);
@@ -154,6 +178,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                     date_taken: aiData.date_taken || new Date(file.lastModified).toISOString(),
                     filename: file.name,
                     path: objectUrl, // Blob for display
+                    realPath, // Absolute disk path for CSV export
 
                     format: file.type.split('/')[1],
                     file_size_kb: Math.round(file.size / 1024),
@@ -184,6 +209,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                 newPhotos.push({
                     filename: file.name,
                     path: objectUrl,
+                    realPath, // Always keep references to disk
 
                     file_size_kb: Math.round(file.size / 1024),
                     format: file.type.split('/')[1],
@@ -237,27 +263,31 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-card w-full max-w-md rounded-lg shadow-lg border p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-card w-full max-w-md rounded-2xl shadow-premium border p-6 space-y-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">
                         {mode === "select" && "Seleccionar Galería (CSV)"}
                         {mode === "update" && "Actualizar Galería"}
                         {mode === "download" && "Descargar Galería"}
                     </h3>
-                    <button onClick={onClose}><X className="h-4 w-4" /></button>
+                    <Tooltip text="Cerrar ventana" position="bottom">
+                        <button onClick={onClose} className="p-1 hover:bg-accent/50 rounded-lg transition-colors"><X className="h-4 w-4" /></button>
+                    </Tooltip>
                 </div>
 
                 <div className="space-y-4">
                     {mode === "select" && (
                         <div className="space-y-4">
-                            <div className="p-4 border-2 border-dashed rounded-xl hover:bg-accent/50 transition-colors cursor-pointer text-center"
-                                onClick={() => csvInputRef.current?.click()}>
-                                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
-                                <h3 className="font-medium text-lg mb-1">Cargar CSV de Galería</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Selecciona un archivo .csv exportado anteriormente
-                                </p>
-                            </div>
+                            <Tooltip text="Seleccionar archivo csv desde tu ordenador" position="top" className="w-full">
+                                <div className="w-full p-4 border-2 border-dashed rounded-2xl hover:bg-accent/50 transition-colors cursor-pointer text-center hover:shadow-md"
+                                    onClick={() => csvInputRef.current?.click()}>
+                                    <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-3 group-hover:text-primary transition-colors" />
+                                    <h3 className="font-medium text-lg mb-1">Cargar CSV de Galería</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Selecciona un archivo .csv exportado anteriormente
+                                    </p>
+                                </div>
+                            </Tooltip>
 
                             <div className="relative">
                                 <div className="absolute inset-0 flex items-center">
@@ -268,13 +298,17 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                                 </div>
                             </div>
 
-                            <button
-                                onClick={handleNewGallery}
-                                className="w-full py-4 border rounded-xl hover:bg-accent/50 transition-colors flex flex-col items-center justify-center gap-2 group"
-                            >
-                                <FolderPlus className="h-6 w-6 text-muted-foreground group-hover:text-foreground" />
-                                <span className="font-medium">Iniciar Nueva Galería Vacía</span>
-                            </button>
+                            <Tooltip text="Borrar vista actual y empezar desde cero" position="top" className="w-full">
+                                <div className="w-full">
+                                    <button
+                                        onClick={handleNewGallery}
+                                        className="w-full py-4 border rounded-2xl hover:bg-accent/50 transition-colors flex flex-col items-center justify-center gap-2 group hover:shadow-md cursor-pointer"
+                                    >
+                                        <FolderPlus className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <span className="font-medium group-hover:text-primary transition-colors">Iniciar Nueva Galería Vacía</span>
+                                    </button>
+                                </div>
+                            </Tooltip>
 
                             <input
                                 type="file"
@@ -293,7 +327,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                                 <input
                                     type="text"
                                     placeholder="Ej: C:\Users\julia\Downloads\MisFotos"
-                                    className="w-full p-2 border rounded-md text-sm"
+                                    className="w-full p-3 border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-primary/50 transition-all outline-none"
                                     value={basePath}
                                     onChange={(e) => setBasePath(e.target.value)}
                                 />
@@ -304,34 +338,50 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="text-center p-6 border-2 border-dashed rounded-lg hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2"
-                                    onClick={() => folderInputRef.current?.click()}>
-                                    <FolderPlus className="h-8 w-8 text-muted-foreground" />
-                                    <p className="text-sm font-medium">Seleccionar Carpeta</p>
-                                    <input
-                                        type="file"
-                                        // @ts-expect-error webkitdirectory is non-standard
-                                        webkitdirectory=""
-                                        multiple
-                                        className="hidden"
-                                        ref={folderInputRef}
-                                        onChange={handleUpdateGallery}
-                                    />
-                                </div>
+                                <Tooltip text="Importar fotos desde una carpeta completa" position="top">
+                                    <div className="text-center p-6 border-2 border-dashed rounded-2xl hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2 hover:shadow-md group transition-all"
+                                        onClick={(e) => {
+                                            if (!basePath.trim()) {
+                                                e.preventDefault();
+                                                setError("Debes escribir la Ruta Base para localizar los archivos más tarde.");
+                                                return;
+                                            }
+                                            folderInputRef.current?.click();
+                                        }}>
+                                        <FolderPlus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <p className="text-sm font-medium group-hover:text-primary transition-colors">Seleccionar Carpeta</p>
+                                        <input
+                                            type="file"
+                                            // @ts-expect-error webkitdirectory is non-standard
+                                            webkitdirectory=""
+                                            multiple
+                                            className="hidden"
+                                            ref={folderInputRef}
+                                            onChange={handleUpdateGallery}
+                                        />
+                                    </div>
+                                </Tooltip>
 
-                                <div className="text-center p-6 border-2 border-dashed rounded-lg hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2"
-                                    onClick={() => {
-                                        const input = document.createElement('input');
-                                        input.type = 'file';
-                                        input.multiple = true;
-                                        input.accept = "image/*";
-                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                        input.onchange = (e) => handleUpdateGallery(e as any);
-                                        input.click();
-                                    }}>
-                                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                                    <p className="text-sm font-medium">Seleccionar Fotos</p>
-                                </div>
+                                <Tooltip text="Elegir imágenes específicas" position="top">
+                                    <div className="text-center p-6 border-2 border-dashed rounded-2xl hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2 hover:shadow-md group transition-all"
+                                        onClick={(e) => {
+                                            if (!basePath.trim()) {
+                                                e.preventDefault();
+                                                setError("Debes escribir la Ruta Base para localizar los archivos más tarde.");
+                                                return;
+                                            }
+                                            const input = document.createElement('input');
+                                            input.type = 'file';
+                                            input.multiple = true;
+                                            input.accept = "image/*";
+                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                            input.onchange = (ev) => handleUpdateGallery(ev as any);
+                                            input.click();
+                                        }}>
+                                        <ImageIcon className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <p className="text-sm font-medium group-hover:text-primary transition-colors">Seleccionar Fotos</p>
+                                    </div>
+                                </Tooltip>
                             </div>
                         </div>
                     )}
@@ -341,12 +391,16 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                             <p className="mb-4 text-sm text-muted-foreground">
                                 Se descargará un archivo CSV con {currentGallery.length} fotos.
                             </p>
-                            <button
-                                onClick={handleDownloadGallery}
-                                className="px-4 py-2 bg-primary text-primary-foreground rounded-md flex items-center gap-2 mx-auto"
-                            >
-                                <Download className="h-4 w-4" /> Descargar CSV
-                            </button>
+                            <Tooltip text="Exportar las fotos analizadas a tu ordenador" position="top">
+                                <div>
+                                    <button
+                                        onClick={handleDownloadGallery}
+                                        className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl flex items-center gap-2 mx-auto hover:bg-primary/90 transition-colors hover:scale-[1.02] shadow-md hover:shadow-premium"
+                                    >
+                                        <Download className="h-4 w-4" /> Descargar CSV
+                                    </button>
+                                </div>
+                            </Tooltip>
                         </div>
                     )}
 

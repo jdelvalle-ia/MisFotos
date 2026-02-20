@@ -136,18 +136,18 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
                         {photo.filename}
                     </h3>
                     <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <span className="flex items-center gap-1.5">
-                            <FileType className="h-3 w-3" /> {photo.format?.toUpperCase()}
+                        <span className="flex items-center gap-1.5 font-medium">
+                            <FileType className="h-3 w-3 text-orange-500" /> {photo.format?.toUpperCase()}
                         </span>
                         <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                        <span className="flex items-center gap-1.5">
-                            <HardDrive className="h-3 w-3" /> {photo.file_size_kb} KB
+                        <span className="flex items-center gap-1.5 font-medium">
+                            <HardDrive className="h-3 w-3 text-blue-500" /> {photo.file_size_kb} KB
                         </span>
                         {photo.date_taken && (
                             <>
                                 <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                                <span className="flex items-center gap-1.5">
-                                    <Calendar className="h-3 w-3" /> {new Date(photo.date_taken).toLocaleString()}
+                                <span className="flex items-center gap-1.5 font-medium">
+                                    <Calendar className="h-3 w-3 text-green-500" /> {new Date(photo.date_taken).toLocaleString()}
                                 </span>
                             </>
                         )}
@@ -160,7 +160,7 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
                         <div className="p-3 bg-muted/20 rounded-lg">
                             <span className="text-xs text-muted-foreground block mb-1">Resolución</span>
                             <div className="font-medium flex items-center gap-1">
-                                <Monitor className="h-3 w-3" />
+                                <Monitor className="h-3 w-3 text-indigo-500" />
                                 {photo.width} x {photo.height}
                             </div>
                         </div>

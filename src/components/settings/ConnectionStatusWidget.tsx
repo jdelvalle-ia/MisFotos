@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Key, RotateCw, Wifi } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 export function ConnectionStatusWidget() {
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -36,13 +37,12 @@ export function ConnectionStatusWidget() {
                         <h3 className="font-semibold text-lg flex items-center gap-2 text-foreground">
                             <Key className={cn(
                                 "h-5 w-5",
-                                status === "success" ? "text-green-500" :
-                                    status === "error" ? "text-red-500" : "text-primary"
+                                status === "error" ? "text-red-500" : "text-green-500"
                             )} />
-                            API GOOGLE (NAV)
+                            Configuración de API
                         </h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Motor de obtención de datos.
+                            Motor de obtención de datos y tokens para gemini.
                         </p>
                     </div>
                     {status === "success" && (
@@ -55,13 +55,15 @@ export function ConnectionStatusWidget() {
 
                 <div className="pt-4">
                     {status === "idle" && (
-                        <button
-                            onClick={handleTestConnection}
-                            className="w-full py-3 rounded-lg border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 hover:bg-accent/50 transition-all flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-                        >
-                            <Wifi className="h-4 w-4" />
-                            TEST CONEXIÓN
-                        </button>
+                        <Tooltip text="Inicia una prueba de conexión rápida con el servidor" position="top" className="w-full">
+                            <button
+                                onClick={handleTestConnection}
+                                className="w-full py-3 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold border border-green-500/20 hover:bg-green-500 hover:text-white dark:hover:text-white transition-all flex items-center justify-center gap-2 text-sm shadow-sm hover:shadow-premium"
+                            >
+                                <Wifi className="h-4 w-4" />
+                                Probar conexión
+                            </button>
+                        </Tooltip>
                     )}
 
                     {status === "loading" && (
@@ -73,30 +75,34 @@ export function ConnectionStatusWidget() {
 
                     {status === "success" && (
                         <div className="flex items-center justify-between">
-                            <div className="px-3 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded-md text-sm font-bold border border-green-500/20 shadow-sm">
-                                ONLINE
+                            <div className="px-3 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded-xl text-sm font-bold border border-green-500/20 shadow-sm">
+                                Conectado
                             </div>
-                            <button
-                                onClick={handleTestConnection}
-                                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                            >
-                                <RotateCw className="h-3 w-3" /> Re-test
-                            </button>
-                        </div>
-                    )}
-
-                    {status === "error" && (
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="px-3 py-1 bg-red-500/10 text-red-600 dark:text-red-400 rounded-md text-sm font-bold border border-red-500/20 shadow-sm">
-                                    ERROR
-                                </div>
+                            <Tooltip text="Volver a intentar la conexión" position="top">
                                 <button
                                     onClick={handleTestConnection}
                                     className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                                 >
                                     <RotateCw className="h-3 w-3" /> Re-test
                                 </button>
+                            </Tooltip>
+                        </div>
+                    )}
+
+                    {status === "error" && (
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="px-3 py-1 bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold border border-red-500/20 shadow-sm">
+                                    Error de conexión
+                                </div>
+                                <Tooltip text="Volver a intentar conectar con el servidor" position="top">
+                                    <button
+                                        onClick={handleTestConnection}
+                                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                                    >
+                                        <RotateCw className="h-3 w-3" /> Reintentar
+                                    </button>
+                                </Tooltip>
                             </div>
                             {message && (
                                 <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
@@ -111,9 +117,8 @@ export function ConnectionStatusWidget() {
             {/* Decorative background gradient */}
             <div className={cn(
                 "absolute -inset-1 opacity-10 blur-2xl transition-all duration-1000 -z-10",
-                status === "success" ? "bg-gradient-to-tr from-green-500 via-transparent to-transparent" :
-                    status === "error" ? "bg-gradient-to-tr from-red-500 via-transparent to-transparent" :
-                        "bg-gradient-to-tr from-primary/20 via-transparent to-transparent"
+                status === "error" ? "bg-gradient-to-tr from-red-500 via-transparent to-transparent" :
+                    "bg-gradient-to-tr from-green-500 via-transparent to-transparent"
             )} />
         </div>
     );

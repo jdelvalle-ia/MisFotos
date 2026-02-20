@@ -22,6 +22,7 @@ export interface PhotoMetadata {
     tags: string[];
     date_added?: string;
     date_taken?: string;
+    realPath?: string;
 }
 
 export interface CsvSettings {

@@ -96,7 +96,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <h2 className="text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500 drop-shadow-sm pb-1">Dashboard</h2>
       </div>
 
       {/* Stats Overview */}
@@ -106,18 +106,21 @@ export default function Dashboard() {
           value={stats.totalPhotos}
           icon={ImageIcon}
           description="Imágenes en la galería"
+          colorClass="text-blue-500 bg-blue-500/10 group-hover:bg-blue-500 group-hover:text-white"
         />
         <StatsWidget
           title="Procesadas con IA"
           value={stats.processed}
           icon={UploadCloud}
           description="Fotos analizadas"
+          colorClass="text-purple-500 bg-purple-500/10 group-hover:bg-purple-500 group-hover:text-white"
         />
         <StatsWidget
           title="Etiquetas Únicas"
           value={stats.tags}
           icon={FileText}
           description="Categorías descubiertas"
+          colorClass="text-green-500 bg-green-500/10 group-hover:bg-green-500 group-hover:text-white"
         />
       </div>
 
@@ -128,18 +131,21 @@ export default function Dashboard() {
           description="Cargar archivo CSV de galería existente"
           icon={FileText}
           onClick={() => handleOpenManager("select")}
+          colorClass="text-blue-500 bg-blue-500/10 group-hover:bg-blue-500 group-hover:text-white shadow-blue-500/30"
         />
         <ActionCard
           title="Actualizar Galería"
           description="Analizar nuevas carpetas con IA"
           icon={UploadCloud}
           onClick={() => handleOpenManager("update")}
+          colorClass="text-purple-500 bg-purple-500/10 group-hover:bg-purple-500 group-hover:text-white shadow-purple-500/30"
         />
         <ActionCard
           title="Descargar Galería"
           description="Exportar datos a CSV inmediatamente"
           icon={Download}
           onClick={handleDirectDownload}
+          colorClass="text-green-500 bg-green-500/10 group-hover:bg-green-500 group-hover:text-white shadow-green-500/30"
         />
       </div>
 

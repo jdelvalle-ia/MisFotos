@@ -98,7 +98,7 @@ export function GalleryFilters({ photos, filters, onFilterChange, totalResults }
                         <input
                             type="text"
                             placeholder="Buscar por descripción, texto o tags..."
-                            className="w-full pl-9 pr-4 py-2 bg-background border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="w-full pl-9 pr-4 py-2 bg-card/50 hover:bg-card text-foreground border border-border/50 hover:border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
                             value={filters.search}
                             onChange={(e) => handleChange('search', e.target.value)}
                         />
@@ -177,16 +177,16 @@ export function GalleryFilters({ photos, filters, onFilterChange, totalResults }
                             onChange={(v) => handleChange('mood', v)}
                             defaultLabel="Todos"
                         />
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">Contiene Texto</label>
+                        <div className="space-y-1.5 group">
+                            <label className="text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">Contiene Texto</label>
                             <select
-                                className="w-full p-2 bg-background text-foreground border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                className="w-full p-2 bg-muted/30 hover:bg-muted/50 text-foreground border border-border/50 hover:border-primary/50 hover:shadow-sm rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer"
                                 value={filters.has_text}
                                 onChange={(e) => handleChange('has_text', e.target.value)}
                             >
-                                <option value="Todos" className="bg-background text-foreground">Todos</option>
-                                <option value="Si" className="bg-background text-foreground">Sí</option>
-                                <option value="No" className="bg-background text-foreground">No</option>
+                                <option value="Todos" className="bg-slate-900 text-slate-100 font-medium">Todos</option>
+                                <option value="Si" className="bg-slate-900 text-slate-100 font-medium">Sí</option>
+                                <option value="No" className="bg-slate-900 text-slate-100 font-medium">No</option>
                             </select>
                         </div>
                     </div>
@@ -216,16 +216,16 @@ interface FilterSelectProps {
 
 function FilterSelect({ label, value, options, onChange, defaultLabel = "Todos" }: FilterSelectProps) {
     return (
-        <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">{label}</label>
+        <div className="space-y-1.5 group">
+            <label className="text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">{label}</label>
             <select
-                className="w-full p-2 bg-background text-foreground border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full p-2 bg-muted/30 hover:bg-muted/50 text-foreground border border-border/50 hover:border-primary/50 hover:shadow-sm rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
             >
-                <option value={defaultLabel} className="bg-background text-foreground">{defaultLabel}</option>
+                <option value={defaultLabel} className="bg-slate-900 text-slate-100 font-medium">{defaultLabel}</option>
                 {options.map(opt => (
-                    <option key={opt} value={opt} className="bg-background text-foreground">{opt}</option>
+                    <option key={opt} value={opt} className="bg-slate-900 text-slate-100 font-medium">{opt}</option>
                 ))}
             </select>
         </div>
