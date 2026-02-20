@@ -30,7 +30,7 @@ export function GalleryGrid({ photos = [] }: GalleryGridProps) {
                 >
                     {photo.path && (
                         <Image
-                            src={photo.path.includes('blob:') ? photo.path : `/api/images?path=${encodeURIComponent(photo.path)}`}
+                            src={photo.path.includes('blob:') ? photo.path : `local-file://${photo.path}`}
                             alt={photo.filename || "Photo"}
                             fill
                             className="object-cover transition-transform duration-300 group-hover:scale-110"

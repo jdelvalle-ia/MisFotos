@@ -38,3 +38,21 @@ export interface ScanResult {
     error?: string;
     images?: Partial<PhotoMetadata>[];
 }
+
+declare global {
+    interface Window {
+        electronAPI?: {
+            ping: () => Promise<string>;
+            selectDirectory: () => Promise<string | null>;
+            readImage: (filePath: string) => Promise<{ success: boolean; data?: string; error?: string }>;
+            getSettings: () => Promise<any>;
+            saveSettings: (settings: any) => Promise<boolean>;
+            getScannedDirectories: () => Promise<{ success: boolean; directories: string[] }>;
+            saveScannedDirectory: (dirPath: string) => Promise<{ success: boolean; error?: string }>;
+            scanDirectory: (dirPath: string) => Promise<ScanResult>;
+            saveCsv: (filePath: string, data: Partial<PhotoMetadata>[]) => Promise<{ success: boolean; error?: string }>;
+            loadCsv: (filePath: string) => Promise<{ success: boolean; data?: Partial<PhotoMetadata>[]; error?: string }>;
+            analyzeImage: (filePath: string, prompt?: string) => Promise<{ success: boolean; data?: Partial<PhotoMetadata>; error?: string }>;
+        };
+    }
+}

@@ -1,15 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "export",
   images: {
-    localPatterns: [
-      {
-        pathname: '/api/images',
-      },
-      {
-        pathname: '/api/images/**',
-      }
-    ],
+    unoptimized: true,
   },
 };
 

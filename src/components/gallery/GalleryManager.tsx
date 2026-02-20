@@ -322,64 +322,35 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
 
                     {mode === "update" && (
                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Ruta Base (Requerido para CSV)</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ej: C:\Users\julia\Downloads\MisFotos"
-                                    className="w-full p-3 border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-primary/50 transition-all outline-none"
-                                    value={basePath}
-                                    onChange={(e) => setBasePath(e.target.value)}
-                                />
-                                <div className="text-xs text-yellow-600 bg-yellow-50 p-2 rounded border border-yellow-200">
-                                    <strong>Nota de Seguridad:</strong> Los navegadores web no permiten leer la ruta completa de tu disco duro automáticamente.
-                                    Por favor, copia y pega la ruta de la carpeta aquí para que el archivo CSV pueda guardar la ubicación correcta de tus fotos.
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <Tooltip text="Importar fotos desde una carpeta completa" position="top">
+                            <div className="grid grid-cols-1 gap-4">
+                                <Tooltip text="Seleccionar carpeta de tu ordenador" position="top">
                                     <div className="text-center p-6 border-2 border-dashed rounded-2xl hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2 hover:shadow-md group transition-all"
-                                        onClick={(e) => {
-                                            if (!basePath.trim()) {
-                                                e.preventDefault();
-                                                setError("Debes escribir la Ruta Base para localizar los archivos más tarde.");
-                                                return;
+                                        onClick={async () => {
+                                            if (window.electronAPI) {
+                                                const dirPath = await window.electronAPI.selectDirectory();
+                                                if (dirPath) {
+                                                    setLoading(true);
+                                                    setProgress({ current: 0, total: 100 });
+                                                    try {
+                                                        const result = await window.electronAPI.scanDirectory(dirPath);
+                                                        if (result.success && result.images) {
+                                                            onGalleryUpdate(result.images);
+                                                            onClose();
+                                                        } else {
+                                                            setError(result.error || "Error al escanear.");
+                                                        }
+                                                    } catch (e: any) {
+                                                        setError(e.message);
+                                                    } finally {
+                                                        setLoading(false);
+                                                    }
+                                                }
+                                            } else {
+                                                setError("Debes ejecutar la aplicación de escritorio para escanear carpetas locales.");
                                             }
-                                            folderInputRef.current?.click();
                                         }}>
                                         <FolderPlus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                                        <p className="text-sm font-medium group-hover:text-primary transition-colors">Seleccionar Carpeta</p>
-                                        <input
-                                            type="file"
-                                            // @ts-expect-error webkitdirectory is non-standard
-                                            webkitdirectory=""
-                                            multiple
-                                            className="hidden"
-                                            ref={folderInputRef}
-                                            onChange={handleUpdateGallery}
-                                        />
-                                    </div>
-                                </Tooltip>
-
-                                <Tooltip text="Elegir imágenes específicas" position="top">
-                                    <div className="text-center p-6 border-2 border-dashed rounded-2xl hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2 hover:shadow-md group transition-all"
-                                        onClick={(e) => {
-                                            if (!basePath.trim()) {
-                                                e.preventDefault();
-                                                setError("Debes escribir la Ruta Base para localizar los archivos más tarde.");
-                                                return;
-                                            }
-                                            const input = document.createElement('input');
-                                            input.type = 'file';
-                                            input.multiple = true;
-                                            input.accept = "image/*";
-                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                            input.onchange = (ev) => handleUpdateGallery(ev as any);
-                                            input.click();
-                                        }}>
-                                        <ImageIcon className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                                        <p className="text-sm font-medium group-hover:text-primary transition-colors">Seleccionar Fotos</p>
+                                        <p className="text-sm font-medium group-hover:text-primary transition-colors">Seleccionar Carpeta para Escanear</p>
                                     </div>
                                 </Tooltip>
                             </div>

@@ -39,8 +39,8 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
     // Helper to get image source
     const getImageSrc = (p: Partial<PhotoMetadata>) => {
         if (!p.path) return "";
-        if (p.path.startsWith("blob:")) return p.path;
-        return `/api/images?path=${encodeURIComponent(p.path)}`;
+        // Temporary static url for export testing
+        return p.path.includes('blob:') ? p.path : p.path;
     };
 
 

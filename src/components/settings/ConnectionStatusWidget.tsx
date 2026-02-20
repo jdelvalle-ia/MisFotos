@@ -14,14 +14,17 @@ export function ConnectionStatusWidget() {
         setMessage("");
 
         try {
-            const res = await fetch("/api/test-connection");
-            const data = await res.json();
-
-            if (res.ok && data.success) {
-                setStatus("success");
+            if (window.electronAPI) {
+                const res = await window.electronAPI.ping();
+                if (res === 'pong') {
+                    setStatus("success");
+                } else {
+                    setStatus("error");
+                    setMessage("Respuesta inesperada");
+                }
             } else {
                 setStatus("error");
-                setMessage(data.message || "Error desconocido");
+                setMessage("Electron API no disponible");
             }
         } catch {
             setStatus("error");

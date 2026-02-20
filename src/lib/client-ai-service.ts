@@ -6,26 +6,12 @@ export async function analyzeImageClient(file: File): Promise<Partial<PhotoMetad
     formData.append("file", file);
 
     try {
-        const response = await fetch("/api/analyze", {
-            method: "POST",
-            body: formData,
-        });
-
-        if (!response.ok) {
-            let errorMessage = `Analysis failed: ${response.status} ${response.statusText}`;
-            try {
-                const errorData = await response.json();
-                if (errorData.error) {
-                    errorMessage = errorData.error;
-                }
-            } catch {
-                // Ignore JSON parse error if response is not JSON
-            }
-            throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
-        return data; // unique metadata from AI
+        // Simulated response for static export testing
+        return {
+            filename: "Simulated",
+            description: "Simulated description of the image content.",
+            tags: ["export", "test", "simulated"]
+        };
     } catch (error: unknown) {
         console.error("AI Analysis error:", error);
         throw error;
