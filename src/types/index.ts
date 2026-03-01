@@ -45,8 +45,8 @@ declare global {
             ping: () => Promise<string>;
             selectDirectory: () => Promise<string | null>;
             readImage: (filePath: string) => Promise<{ success: boolean; data?: string; error?: string }>;
-            getSettings: () => Promise<any>;
-            saveSettings: (settings: any) => Promise<boolean>;
+            getSettings: () => Promise<Record<string, unknown>>;
+            saveSettings: (settings: Record<string, unknown>) => Promise<boolean>;
             getScannedDirectories: () => Promise<{ success: boolean; directories: string[] }>;
             saveScannedDirectory: (dirPath: string) => Promise<{ success: boolean; error?: string }>;
             scanDirectory: (dirPath: string) => Promise<ScanResult>;

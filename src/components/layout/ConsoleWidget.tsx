@@ -6,13 +6,12 @@ import { Terminal, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
 export function ConsoleWidget() {
-    const { logs, clearLogs } = useConsole();
-    const [isExpanded, setIsExpanded] = useState(false);
+    const { logs, clearLogs, isConsoleOpen, setConsoleOpen } = useConsole();
 
     return (
         <>
             <button
-                onClick={() => setIsExpanded(true)}
+                onClick={() => setConsoleOpen(true)}
                 className="w-full flex items-center px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
                 title="Abrir Consola"
             >
@@ -20,7 +19,7 @@ export function ConsoleWidget() {
                 Consola sistema
             </button>
 
-            {isExpanded && (
+            {isConsoleOpen && (
                 <div className="fixed bottom-4 right-4 z-50 w-[600px] h-96 flex flex-col border rounded-lg bg-black text-green-400 font-mono text-xs overflow-hidden shadow-2xl">
                     <div className="flex items-center justify-between px-3 py-1 bg-gray-900 border-b border-gray-800">
                         <div className="flex items-center gap-2">
@@ -31,7 +30,7 @@ export function ConsoleWidget() {
                             <button onClick={clearLogs} className="p-1 hover:bg-gray-800 rounded" title="Limpiar">
                                 <Trash2 className="h-3 w-3" />
                             </button>
-                            <button onClick={() => setIsExpanded(false)} className="p-1 hover:bg-gray-800 rounded" title="Minimizar">
+                            <button onClick={() => setConsoleOpen(false)} className="p-1 hover:bg-gray-800 rounded" title="Minimizar">
                                 <X className="h-3 w-3" />
                             </button>
                         </div>

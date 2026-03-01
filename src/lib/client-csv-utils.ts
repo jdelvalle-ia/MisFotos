@@ -15,10 +15,13 @@ export function parseCSV(csvContent: string): Promise<Partial<PhotoMetadata>[]> 
                 // Map and clean data
                 const photos = results.data
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .filter((row: any) => row.filename) // Filter out empty lines that might have slipped through
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .map((row: any) => ({
                         ...row,
+                        width: row.width ? Number(row.width) : undefined,
+                        height: row.height ? Number(row.height) : undefined,
                         file_size_kb: row.file_size_kb ? Number(row.file_size_kb) : undefined,
                         has_text: row.has_text === 'true' || row.has_text === true, // Handle boolean conversion
                         tags: row.tags ? row.tags.split('|') : [],

@@ -6,8 +6,6 @@ import { PhotoMetadata } from "@/types";
 import { parseCSV, generateCSV } from "@/lib/client-csv-utils";
 import { analyzeImageClient } from "@/lib/client-ai-service";
 import { compressImage } from "@/lib/utils";
-import { Tooltip } from "@/components/ui/Tooltip";
-
 interface GalleryManagerProps {
     isOpen: boolean;
     mode: "select" | "update" | "download";
@@ -233,8 +231,8 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
         }
 
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const cleanGallery = currentGallery.map((p: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const cleanGallery = currentGallery.map((p: Partial<PhotoMetadata> & { realPath?: string }) => {
                 const { realPath, ...rest } = p;
                 return {
                     ...rest,
@@ -270,24 +268,20 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                         {mode === "update" && "Actualizar Galería"}
                         {mode === "download" && "Descargar Galería"}
                     </h3>
-                    <Tooltip text="Cerrar ventana" position="bottom">
-                        <button onClick={onClose} className="p-1 hover:bg-accent/50 rounded-lg transition-colors"><X className="h-4 w-4" /></button>
-                    </Tooltip>
+                    <button onClick={onClose} className="p-1 hover:bg-accent/50 rounded-lg transition-colors"><X className="h-4 w-4" /></button>
                 </div>
 
                 <div className="space-y-4">
                     {mode === "select" && (
                         <div className="space-y-4">
-                            <Tooltip text="Seleccionar archivo csv desde tu ordenador" position="top" className="w-full">
-                                <div className="w-full p-4 border-2 border-dashed rounded-2xl hover:bg-accent/50 transition-colors cursor-pointer text-center hover:shadow-md"
-                                    onClick={() => csvInputRef.current?.click()}>
-                                    <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-3 group-hover:text-primary transition-colors" />
-                                    <h3 className="font-medium text-lg mb-1">Cargar CSV de Galería</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Selecciona un archivo .csv exportado anteriormente
-                                    </p>
-                                </div>
-                            </Tooltip>
+                            <div className="w-full p-4 border-2 border-dashed rounded-2xl hover:bg-accent/50 transition-colors cursor-pointer text-center hover:shadow-md"
+                                onClick={() => csvInputRef.current?.click()}>
+                                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-3 group-hover:text-primary transition-colors" />
+                                <h3 className="font-medium text-lg mb-1">Cargar CSV de Galería</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Selecciona un archivo .csv exportado anteriormente
+                                </p>
+                            </div>
 
                             <div className="relative">
                                 <div className="absolute inset-0 flex items-center">
@@ -298,17 +292,15 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                                 </div>
                             </div>
 
-                            <Tooltip text="Borrar vista actual y empezar desde cero" position="top" className="w-full">
-                                <div className="w-full">
-                                    <button
-                                        onClick={handleNewGallery}
-                                        className="w-full py-4 border rounded-2xl hover:bg-accent/50 transition-colors flex flex-col items-center justify-center gap-2 group hover:shadow-md cursor-pointer"
-                                    >
-                                        <FolderPlus className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                                        <span className="font-medium group-hover:text-primary transition-colors">Iniciar Nueva Galería Vacía</span>
-                                    </button>
-                                </div>
-                            </Tooltip>
+                            <div className="w-full">
+                                <button
+                                    onClick={handleNewGallery}
+                                    className="w-full py-4 border rounded-2xl hover:bg-accent/50 transition-colors flex flex-col items-center justify-center gap-2 group hover:shadow-md cursor-pointer"
+                                >
+                                    <FolderPlus className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    <span className="font-medium group-hover:text-primary transition-colors">Iniciar Nueva Galería Vacía</span>
+                                </button>
+                            </div>
 
                             <input
                                 type="file"
@@ -322,38 +314,95 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
 
                     {mode === "update" && (
                         <div className="space-y-4">
-                            <div className="grid grid-cols-1 gap-4">
-                                <Tooltip text="Seleccionar carpeta de tu ordenador" position="top">
-                                    <div className="text-center p-6 border-2 border-dashed rounded-2xl hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2 hover:shadow-md group transition-all"
-                                        onClick={async () => {
-                                            if (window.electronAPI) {
-                                                const dirPath = await window.electronAPI.selectDirectory();
-                                                if (dirPath) {
-                                                    setLoading(true);
-                                                    setProgress({ current: 0, total: 100 });
-                                                    try {
-                                                        const result = await window.electronAPI.scanDirectory(dirPath);
-                                                        if (result.success && result.images) {
-                                                            onGalleryUpdate(result.images);
-                                                            onClose();
-                                                        } else {
-                                                            setError(result.error || "Error al escanear.");
-                                                        }
-                                                    } catch (e: any) {
-                                                        setError(e.message);
-                                                    } finally {
-                                                        setLoading(false);
-                                                    }
-                                                }
-                                            } else {
-                                                setError("Debes ejecutar la aplicación de escritorio para escanear carpetas locales.");
-                                            }
-                                        }}>
-                                        <FolderPlus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                                        <p className="text-sm font-medium group-hover:text-primary transition-colors">Seleccionar Carpeta para Escanear</p>
-                                    </div>
-                                </Tooltip>
+                            <div className="space-y-2">
+                                <label htmlFor="basePath" className="text-sm font-medium">Ruta Base (Requerido)*</label>
+                                <input
+                                    id="basePath"
+                                    type="text"
+                                    value={basePath}
+                                    onChange={(e) => setBasePath(e.target.value)}
+                                    placeholder="Ej: C:\MisFotos\Vacaciones"
+                                    className="w-full p-2 border rounded-md bg-background focus:ring-2 focus:ring-primary outline-none"
+                                    required
+                                />
                             </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="text-center p-6 border-2 border-dashed rounded-2xl hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2 hover:shadow-md group transition-all"
+                                    onClick={() => folderInputRef.current?.click()}>
+                                    <ImageIcon className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    <p className="text-sm font-medium group-hover:text-primary transition-colors">Seleccionar Fotos</p>
+                                </div>
+
+                                <div className="text-center p-6 border-2 border-dashed rounded-2xl hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2 hover:shadow-md group transition-all"
+                                    onClick={async () => {
+                                        if (window.electronAPI) {
+                                            const dirPath = await window.electronAPI.selectDirectory();
+                                            if (dirPath) {
+                                                setLoading(true);
+                                                setProgress({ current: 0, total: 100 });
+                                                try {
+                                                    addLog(`Escaneando directorio: ${dirPath}`, "info");
+                                                    const result = await window.electronAPI.scanDirectory(dirPath);
+                                                    // ... implementation continues ...
+                                                    if (result.success && result.images) {
+                                                        const imagesToProcess = result.images;
+                                                        setProgress({ current: 0, total: imagesToProcess.length });
+
+                                                        const finalImages = [];
+                                                        for (let i = 0; i < imagesToProcess.length; i++) {
+                                                            const img = imagesToProcess[i];
+                                                            if (!img.description && img.path) {
+                                                                addLog(`Analizando [${i + 1}/${imagesToProcess.length}]: ${img.filename}...`, "info");
+                                                                const analysis = await window.electronAPI.analyzeImage(img.path);
+                                                                if (analysis.success && analysis.data) {
+                                                                    finalImages.push({ ...img, ...analysis.data, date_added: new Date().toISOString(), realPath: img.path });
+                                                                    addLog(`IA Completada para ${img.filename}. Etiquetas: ${analysis.data.tags?.length || 0}`, "success");
+                                                                } else {
+                                                                    finalImages.push({ ...img, realPath: img.path });
+                                                                    addLog(`Error al analizar ${img.filename}: ${analysis.error}`, "error");
+                                                                }
+                                                            } else {
+                                                                finalImages.push({ ...img, realPath: img.path });
+                                                            }
+                                                            setProgress(prev => ({ ...prev, current: i + 1 }));
+                                                        }
+                                                        /*
+                                                        addLog("Guardando galería localmente...", "info");
+                                                        const saveResult = await window.electronAPI.saveCsv(`${dirPath}/photos.csv`, finalImages);
+                                                        if (saveResult.success) {
+                                                            addLog("Galería guardada (photos.csv) correctamente.", "success");
+                                                        } else {
+                                                            addLog("No se pudo autoguardar photos.csv: " + saveResult.error, "error");
+                                                        }
+                                                        */
+                                                        onGalleryUpdate([...currentGallery, ...finalImages]);
+                                                        onClose();
+                                                    } else {
+                                                        setError(result.error || "Error al escanear.");
+                                                    }
+                                                } catch (e: unknown) {
+                                                    setError(e instanceof Error ? e.message : "Error desconocido");
+                                                } finally {
+                                                    setLoading(false);
+                                                }
+                                            }
+                                        } else {
+                                            setError("Debes ejecutar la aplicación de escritorio para escanear carpetas locales.");
+                                        }
+                                    }}>
+                                    <FolderPlus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    <p className="text-sm font-medium group-hover:text-primary transition-colors">Escanear Carpeta</p>
+                                </div>
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                ref={folderInputRef}
+                                onChange={handleUpdateGallery}
+                            />
                         </div>
                     )}
 
@@ -362,16 +411,14 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                             <p className="mb-4 text-sm text-muted-foreground">
                                 Se descargará un archivo CSV con {currentGallery.length} fotos.
                             </p>
-                            <Tooltip text="Exportar las fotos analizadas a tu ordenador" position="top">
-                                <div>
-                                    <button
-                                        onClick={handleDownloadGallery}
-                                        className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl flex items-center gap-2 mx-auto hover:bg-primary/90 transition-colors hover:scale-[1.02] shadow-md hover:shadow-premium"
-                                    >
-                                        <Download className="h-4 w-4" /> Descargar CSV
-                                    </button>
-                                </div>
-                            </Tooltip>
+                            <div>
+                                <button
+                                    onClick={handleDownloadGallery}
+                                    className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl flex items-center gap-2 mx-auto hover:bg-primary/90 transition-colors hover:scale-[1.02] shadow-md hover:shadow-premium"
+                                >
+                                    <Download className="h-4 w-4" /> Descargar CSV
+                                </button>
+                            </div>
                         </div>
                     )}
 

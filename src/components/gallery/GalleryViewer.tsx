@@ -39,8 +39,20 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
     // Helper to get image source
     const getImageSrc = (p: Partial<PhotoMetadata>) => {
         if (!p.path) return "";
-        // Temporary static url for export testing
-        return p.path.includes('blob:') ? p.path : p.path;
+        if (p.path.includes('blob:') || p.path.startsWith('data:')) return p.path;
+
+        let cleanPath = p.path.replace(/^file:\/\/\//, '').replace(/^local-file:\/\//, '');
+        if (cleanPath.startsWith('/') && cleanPath.match(/^\/[a-zA-Z]:/)) {
+            // It's like /C:/Users... which becomes C:/Users...
+            cleanPath = cleanPath.substring(1);
+        }
+
+        // URIs must use forward slashes, replace windows backslashes
+        cleanPath = cleanPath.replace(/\\/g, '/');
+        // Encode URI components to handle spaces and special chars safely in Chrome network stack
+        const parts = cleanPath.split('/');
+        const encodedPath = parts.map(p => encodeURIComponent(p)).join('/');
+        return `local-file://${encodedPath}`;
     };
 
 
@@ -117,13 +129,10 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
                 {/* Main Image */}
                 <div className="relative w-full h-full p-4">
                     {photo.path && (
-                        <Image
+                        <img
                             src={getImageSrc(photo)}
                             alt={photo.filename || "Gallery Image"}
-                            fill
-                            className="object-contain"
-                            priority
-                            sizes="(max-width: 1024px) 100vw, 70vw"
+                            className="object-contain w-full h-full"
                         />
                     )}
                 </div>
@@ -161,7 +170,7 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
                             <span className="text-xs text-muted-foreground block mb-1">Resolución</span>
                             <div className="font-medium flex items-center gap-1">
                                 <Monitor className="h-3 w-3 text-indigo-500" />
-                                {photo.width} x {photo.height}
+                                {photo.resolution || `${photo.width} x ${photo.height}`}
                             </div>
                         </div>
                         <div className="p-3 bg-muted/20 rounded-lg">

@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { Tooltip } from "@/components/ui/Tooltip";
 import React from "react";
 
 interface StatsWidgetProps {
@@ -14,7 +13,7 @@ interface StatsWidgetProps {
 
 export function StatsWidget({ title, value, icon: Icon, trend, description, className, colorClass = "text-primary bg-primary/10 group-hover:bg-primary group-hover:text-primary-foreground" }: StatsWidgetProps) {
     return (
-        <Tooltip text={`Estadística: ${title.toLowerCase()}`} position="top">
+        <>
             <div className={cn(
                 "p-6 rounded-2xl border bg-card text-card-foreground shadow-md hover:shadow-premium transition-all duration-300 group hover:border-primary/50 hover:-translate-y-1 cursor-default",
                 className
@@ -35,6 +34,6 @@ export function StatsWidget({ title, value, icon: Icon, trend, description, clas
                     )}
                 </div>
             </div>
-        </Tooltip>
+        </>
     );
 }

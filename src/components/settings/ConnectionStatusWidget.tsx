@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Key, RotateCw, Wifi } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Key, RotateCw, Wifi, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Tooltip } from "@/components/ui/Tooltip";
-
 export function ConnectionStatusWidget() {
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [message, setMessage] = useState("");
+    const [apiKey, setApiKey] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            if (window.electronAPI) {
+                const settings = await window.electronAPI.getSettings();
+                if (settings && typeof settings.googleApiKey === 'string') {
+                    setApiKey(settings.googleApiKey);
+                }
+            }
+        };
+        loadSettings();
+    }, []);
 
     const handleTestConnection = async () => {
         setStatus("loading");
@@ -30,6 +42,17 @@ export function ConnectionStatusWidget() {
             setStatus("error");
             setMessage("Error de red al conectar con el servidor");
         }
+    };
+
+    const handleSaveKey = async () => {
+        setIsSaving(true);
+        if (window.electronAPI) {
+            const settings = await window.electronAPI.getSettings();
+            await window.electronAPI.saveSettings({ ...settings, googleApiKey: apiKey });
+            setMessage("Clave API guardada.");
+            setTimeout(() => setMessage(""), 3000);
+        }
+        setIsSaving(false);
     };
 
     return (
@@ -56,39 +79,58 @@ export function ConnectionStatusWidget() {
                     )}
                 </div>
 
-                <div className="pt-4">
-                    {status === "idle" && (
-                        <Tooltip text="Inicia una prueba de conexión rápida con el servidor" position="top" className="w-full">
+                <div className="pt-4 space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Google Gemini API Key</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="password"
+                                placeholder="Pega tu clave API aquí..."
+                                className="flex-1 p-2 border rounded-lg text-sm bg-background"
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                            />
                             <button
-                                onClick={handleTestConnection}
-                                className="w-full py-3 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold border border-green-500/20 hover:bg-green-500 hover:text-white dark:hover:text-white transition-all flex items-center justify-center gap-2 text-sm shadow-sm hover:shadow-premium"
+                                onClick={handleSaveKey}
+                                disabled={isSaving}
+                                className="p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
                             >
-                                <Wifi className="h-4 w-4" />
-                                Probar conexión
+                                <Save className="h-5 w-5" />
                             </button>
-                        </Tooltip>
+                        </div>
+                        {message && message === "Clave API guardada." && (
+                            <p className="text-xs text-green-500">{message}</p>
+                        )}
+                    </div>
+
+                    {status === "idle" && (
+                        <button
+                            onClick={handleTestConnection}
+                            className="w-full py-3 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold border border-green-500/20 hover:bg-green-500 hover:text-white dark:hover:text-white transition-all flex items-center justify-center gap-2 text-sm shadow-sm hover:shadow-premium"
+                        >
+                            <Wifi className="h-4 w-4" />
+                            Probar conexión IPC
+                        </button>
                     )}
 
                     {status === "loading" && (
                         <div className="w-full py-3 flex items-center justify-center gap-2 text-sm text-muted-foreground animate-pulse">
                             <RotateCw className="h-4 w-4 animate-spin" />
-                            Verificando...
+                            Verificando IPC...
                         </div>
                     )}
 
                     {status === "success" && (
                         <div className="flex items-center justify-between">
                             <div className="px-3 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded-xl text-sm font-bold border border-green-500/20 shadow-sm">
-                                Conectado
+                                IPC Conectado
                             </div>
-                            <Tooltip text="Volver a intentar la conexión" position="top">
-                                <button
-                                    onClick={handleTestConnection}
-                                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                                >
-                                    <RotateCw className="h-3 w-3" /> Re-test
-                                </button>
-                            </Tooltip>
+                            <button
+                                onClick={handleTestConnection}
+                                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                            >
+                                <RotateCw className="h-3 w-3" /> Re-test
+                            </button>
                         </div>
                     )}
 
@@ -96,18 +138,16 @@ export function ConnectionStatusWidget() {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <div className="px-3 py-1 bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold border border-red-500/20 shadow-sm">
-                                    Error de conexión
+                                    Error de conexión IPC
                                 </div>
-                                <Tooltip text="Volver a intentar conectar con el servidor" position="top">
-                                    <button
-                                        onClick={handleTestConnection}
-                                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                                    >
-                                        <RotateCw className="h-3 w-3" /> Reintentar
-                                    </button>
-                                </Tooltip>
+                                <button
+                                    onClick={handleTestConnection}
+                                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                                >
+                                    <RotateCw className="h-3 w-3" /> Reintentar
+                                </button>
                             </div>
-                            {message && (
+                            {message && message !== "Clave API guardada." && (
                                 <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
                                     {message}
                                 </p>

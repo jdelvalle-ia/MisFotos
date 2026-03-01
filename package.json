@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:electron": "next build && npx -y rimraf ..\\mis-fotos-desktop\\frontend-build && xcopy /E /I out ..\\mis-fotos-desktop\\frontend-build",
     "start": "next start",
     "lint": "eslint"
   },

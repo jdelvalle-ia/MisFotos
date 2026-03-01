@@ -57,8 +57,8 @@ export default function Dashboard() {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cleanGallery = photos.map((p: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const cleanGallery = photos.map((p: Partial<PhotoMetadata> & { realPath?: string }) => {
         const { realPath, ...rest } = p;
         return {
           ...rest,

@@ -21,6 +21,24 @@ export function GalleryGrid({ photos = [] }: GalleryGridProps) {
         );
     }
 
+    const getTargetSrc = (path?: string) => {
+        if (!path) return "";
+        if (path.includes('blob:') || path.startsWith('data:')) return path;
+        // Strip any existing protocols to avoid duplication
+        let cleanPath = path.replace(/^file:\/\/\//, '').replace(/^local-file:\/\//, '');
+        // On Windows, ensure we don't end up with /C:/..., we want C:/...
+        if (cleanPath.startsWith('/') && cleanPath.match(/^\/[a-zA-Z]:/)) {
+            // It's like /C:/Users... which becomes C:/Users...
+            cleanPath = cleanPath.substring(1);
+        }
+        // URIs must use forward slashes, replace windows backslashes
+        cleanPath = cleanPath.replace(/\\/g, '/');
+        // Encode URI components to handle spaces and special chars safely in Chrome network stack
+        const parts = cleanPath.split('/');
+        const encodedPath = parts.map(p => encodeURIComponent(p)).join('/');
+        return `local-file://${encodedPath}`;
+    };
+
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {photos.map((photo, index) => (
@@ -29,12 +47,10 @@ export function GalleryGrid({ photos = [] }: GalleryGridProps) {
                     className="group relative w-full aspect-square bg-muted rounded-2xl overflow-hidden border shadow-sm hover:shadow-premium transition-all duration-300 cursor-pointer hover:border-primary/50"
                 >
                     {photo.path && (
-                        <Image
-                            src={photo.path.includes('blob:') ? photo.path : `local-file://${photo.path}`}
+                        <img
+                            src={getTargetSrc(photo.path)}
                             alt={photo.filename || "Photo"}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-110"
-                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+                            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
                         />
                     )}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
