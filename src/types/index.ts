@@ -50,6 +50,7 @@ declare global {
             getScannedDirectories: () => Promise<{ success: boolean; directories: string[] }>;
             saveScannedDirectory: (dirPath: string) => Promise<{ success: boolean; error?: string }>;
             scanDirectory: (dirPath: string) => Promise<ScanResult>;
+            selectFiles: () => Promise<string[]>;
             saveCsv: (filePath: string, data: Partial<PhotoMetadata>[]) => Promise<{ success: boolean; error?: string }>;
             loadCsv: (filePath: string) => Promise<{ success: boolean; data?: Partial<PhotoMetadata>[]; error?: string }>;
             analyzeImage: (filePath: string, prompt?: string) => Promise<{ success: boolean; data?: Partial<PhotoMetadata>; error?: string }>;

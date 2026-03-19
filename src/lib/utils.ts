@@ -55,3 +55,27 @@ export async function compressImage(file: File, maxDimension = 1600, quality = 0
         img.onerror = (error) => reject(error);
     });
 }
+export async function getImageDimensions(file: File): Promise<{ width: number, height: number }> {
+    return new Promise((resolve) => {
+        if (file.type.startsWith("video/")) {
+            const video = document.createElement("video");
+            video.muted = true;
+            video.playsInline = true;
+            video.onloadedmetadata = () => {
+                resolve({ width: video.videoWidth, height: video.videoHeight });
+                URL.revokeObjectURL(video.src);
+            };
+            video.onerror = () => resolve({ width: 0, height: 0 });
+            video.src = URL.createObjectURL(file);
+            video.load();
+        } else {
+            const img = new Image();
+            img.onload = () => {
+                resolve({ width: img.width, height: img.height });
+                URL.revokeObjectURL(img.src);
+            };
+            img.onerror = () => resolve({ width: 0, height: 0 });
+            img.src = URL.createObjectURL(file);
+        }
+    });
+}

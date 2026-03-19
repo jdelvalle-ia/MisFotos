@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FolderPlus, Download, X, FileText, Image as ImageIcon } from "lucide-react";
 import { PhotoMetadata } from "@/types";
 import { parseCSV, generateCSV } from "@/lib/client-csv-utils";
 import { analyzeImageClient } from "@/lib/client-ai-service";
-import { compressImage } from "@/lib/utils";
+import { getImageDimensions } from "@/lib/utils";
+
 interface GalleryManagerProps {
     isOpen: boolean;
     mode: "select" | "update" | "download";
@@ -16,12 +17,28 @@ interface GalleryManagerProps {
 
 import { useConsole } from "@/context/ConsoleContext";
 
-export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGalleryUpdate }: GalleryManagerProps) {
+export function GalleryManager(props: GalleryManagerProps) {
+    const { isOpen, mode, onClose, onGalleryUpdate } = props;
+    const currentGallery = props.currentGallery || [];
     const { addLog } = useConsole();
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
     const [error, setError] = useState("");
     const [basePath, setBasePath] = useState("");
+    const basePathInputRef = useRef<HTMLInputElement>(null);
+
+    // Auto-focus the input when it opens in update mode or when mode changes to update
+    useEffect(() => {
+        if (isOpen && mode === "update") {
+            const timer = setTimeout(() => {
+                if (basePathInputRef.current) {
+                    basePathInputRef.current.focus();
+                    basePathInputRef.current.select();
+                }
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, mode]);
 
     // Hidden inputs
     const csvInputRef = useRef<HTMLInputElement>(null);
@@ -48,18 +65,6 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
         if (Math.abs(ratio - 2 / 3) < 0.05) return "2:3";
         if (Math.abs(ratio - 9 / 16) < 0.05) return "9:16";
         return "Other";
-    };
-
-    const getImageDimensions = (file: File): Promise<{ width: number, height: number }> => {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                resolve({ width: img.width, height: img.height });
-                URL.revokeObjectURL(img.src);
-            };
-            img.onerror = () => resolve({ width: 0, height: 0 });
-            img.src = URL.createObjectURL(file);
-        });
     };
 
     const handleNewGallery = () => {
@@ -101,6 +106,80 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
         }
     };
 
+    const processElectronAssets = async (assets: Partial<PhotoMetadata>[]) => {
+        const finalImages = [];
+        setProgress({ current: 0, total: assets.length });
+
+        for (let i = 0; i < assets.length; i++) {
+            const img = assets[i];
+            const filePath = img.path || (img as any).realPath;
+
+            if (filePath && !img.description) {
+                addLog(`Analizando [${i + 1}/${assets.length}]: ${img.filename}...`, "info");
+                try {
+                    const analysis = await window.electronAPI!.analyzeImage(filePath);
+                    if (analysis.success && analysis.data) {
+                        const width = analysis.data.width || 0;
+                        const height = analysis.data.height || 0;
+                        finalImages.push({
+                            ...img,
+                            ...analysis.data,
+                            date_added: new Date().toISOString(),
+                            realPath: filePath,
+                            path: filePath,
+                            orientation: (width > height ? 'horizontal' : width < height ? 'vertical' : 'square') as "horizontal" | "vertical" | "square",
+                        });
+                        addLog(`IA Completada para ${img.filename}. Etiquetas: ${analysis.data.tags?.length || 0}`, "success");
+                    } else {
+                        finalImages.push({ ...img, realPath: filePath, path: filePath });
+                        addLog(`Error al analizar ${img.filename}: ${analysis.error}`, "error");
+                    }
+                } catch (err: any) {
+                    finalImages.push({ ...img, realPath: filePath, path: filePath });
+                    addLog(`Error fatal analizando ${img.filename}: ${err.message}`, "error");
+                }
+            } else {
+                finalImages.push({ ...img, realPath: filePath, path: img.path?.startsWith('mifoto://') ? img.path.replace('mifoto://', '') : (img.path || filePath) });
+            }
+            setProgress(prev => ({ ...prev, current: i + 1 }));
+        }
+
+        onGalleryUpdate([...currentGallery, ...finalImages]);
+        onClose();
+    };
+
+    const handleSelectFilesElectron = async () => {
+        if (!window.electronAPI) return;
+
+        setLoading(true);
+        setError("");
+        try {
+            addLog("Abriendo selector de archivos nativo...", "info");
+            const filePaths = await window.electronAPI.selectFiles();
+
+            if (filePaths && filePaths.length > 0) {
+                addLog(`Seleccionados ${filePaths.length} archivos. Preparando análisis...`, "info");
+
+                const assetsToProcess: Partial<PhotoMetadata>[] = filePaths.map(fp => {
+                    const filename = fp.split(/[\\/]/).pop() || fp;
+                    return {
+                        filename,
+                        path: fp,
+                        realPath: fp,
+                        date_added: new Date().toISOString()
+                    };
+                });
+
+                await processElectronAssets(assetsToProcess);
+            }
+        } catch (e: any) {
+            setError(e.message || "Error al seleccionar archivos.");
+            addLog(`Error en selección: ${e.message}`, "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleUpdateGallery = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
@@ -117,18 +196,18 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
         addLog(`Iniciando actualización con ${files.length} archivos detectados.`, "info");
 
         const newPhotos: Partial<PhotoMetadata>[] = [];
+        const imageFiles = Array.from(files).filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"));
 
-        const imageFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
-        addLog(`Filtrado: ${imageFiles.length} imágenes válidas encontradas.`, "info");
+        addLog(`Filtrado: ${imageFiles.length} archivos multimedia válidos encontrados.`, "info");
         setProgress({ current: 0, total: imageFiles.length });
 
         const cleanBasePath = basePath.replace(/[\\/]$/, '');
 
         for (let i = 0; i < imageFiles.length; i++) {
             const file = imageFiles[i];
-
             const filePath = file.webkitRelativePath || file.name;
             let finalPath = '';
+
             if (filePath.includes('/')) {
                 const rootFolderMatch = filePath.split('/')[0];
                 if (cleanBasePath.endsWith(rootFolderMatch)) {
@@ -142,42 +221,23 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
             const realPath = finalPath.replace(/\//g, '\\');
 
             try {
-                const objectUrl = URL.createObjectURL(file);
+                const url = URL.createObjectURL(file);
                 const { width, height } = await getImageDimensions(file);
 
                 addLog(`Analizando [${i + 1}/${imageFiles.length}]: ${file.name}...`, "info");
 
-                // Compress image before upload to avoid payload limits
-                let fileToAnalyze = file;
-                try {
-                    fileToAnalyze = await compressImage(file);
-                    // Log compression results if significant
-                    if (fileToAnalyze.size < file.size) {
-                        const savings = Math.round((1 - fileToAnalyze.size / file.size) * 100);
-                        console.log(`Compressed ${file.name}: ${Math.round(file.size / 1024)}KB -> ${Math.round(fileToAnalyze.size / 1024)}KB (-${savings}%)`);
-                    }
-                } catch (compErr) {
-                    console.warn("Compression failed, trying original:", compErr);
-                }
-
-                const aiData = await analyzeImageClient(fileToAnalyze);
-
-                // Detailed logging for AI Debugging
+                const aiData = await analyzeImageClient(file);
                 addLog(`IA Completada para ${file.name}. Etiquetas: ${aiData.tags?.length || 0}`, "success");
-                if (!aiData.description) addLog(`ADVERTENCIA: Sin descripción para ${file.name}`, "warning");
-
-
 
                 newPhotos.push({
-                    description: "", // Default
-                    tags: [], // Default
-                    ...aiData, // AI data overrides defaults if present
+                    description: "",
+                    tags: [],
+                    ...aiData,
                     date_added: new Date().toISOString(),
                     date_taken: aiData.date_taken || new Date(file.lastModified).toISOString(),
                     filename: file.name,
-                    path: objectUrl, // Blob for display
-                    realPath, // Absolute disk path for CSV export
-
+                    path: url,
+                    realPath,
                     format: file.type.split('/')[1],
                     file_size_kb: Math.round(file.size / 1024),
                     width,
@@ -187,32 +247,17 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                     orientation: width > height ? 'horizontal' : width < height ? 'vertical' : 'square',
                 });
 
-            } catch (err: unknown) {
-                const errMsg = `Error analizando ${file.name}: ${err instanceof Error ? err.message : "Error desconocido"}`;
+            } catch (err: any) {
+                const errMsg = `Error analizando ${file.name}: ${err.message}`;
                 console.error(errMsg, err);
                 addLog(errMsg, "error");
 
-                const objectUrl = URL.createObjectURL(file);
-
-
-
-                // Get basic dimensions even on error if possible
-                let width = 0, height = 0;
-                try {
-                    const dims = await getImageDimensions(file);
-                    width = dims.width;
-                    height = dims.height;
-                } catch { }
-
                 newPhotos.push({
                     filename: file.name,
-                    path: objectUrl,
-                    realPath, // Always keep references to disk
-
+                    path: URL.createObjectURL(file),
+                    realPath,
                     file_size_kb: Math.round(file.size / 1024),
                     format: file.type.split('/')[1],
-                    width,
-                    height
                 });
             }
 
@@ -231,12 +276,10 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
         }
 
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const cleanGallery = currentGallery.map((p: Partial<PhotoMetadata> & { realPath?: string }) => {
                 const { realPath, ...rest } = p;
                 return {
                     ...rest,
-                    // Use realPath if available, otherwise fallback to path if not blob, else filename
                     path: realPath || (p.path?.startsWith('blob:') ? p.filename : p.path)
                 };
             });
@@ -245,7 +288,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const date = new Date();
-            const dateStr = date.toISOString().split('T')[0].replace(/-/g, '_'); // YYYY_MM_DD
+            const dateStr = date.toISOString().split('T')[0].replace(/-/g, '_');
             const a = document.createElement('a');
             a.href = url;
             a.download = `mis-fotos-galeria_${dateStr}.csv`;
@@ -317,19 +360,27 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                             <div className="space-y-2">
                                 <label htmlFor="basePath" className="text-sm font-medium">Ruta Base (Requerido)*</label>
                                 <input
+                                    ref={basePathInputRef}
                                     id="basePath"
                                     type="text"
                                     value={basePath}
                                     onChange={(e) => setBasePath(e.target.value)}
                                     placeholder="Ej: C:\MisFotos\Vacaciones"
-                                    className="w-full p-2 border rounded-md bg-background focus:ring-2 focus:ring-primary outline-none"
+                                    className="w-full p-3 border-2 border-primary/20 rounded-xl bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-medium text-foreground placeholder:text-muted-foreground/50 shadow-sm"
                                     required
+                                    autoComplete="off"
                                 />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="text-center p-6 border-2 border-dashed rounded-2xl hover:bg-accent/50 cursor-pointer flex flex-col items-center justify-center gap-2 hover:shadow-md group transition-all"
-                                    onClick={() => folderInputRef.current?.click()}>
+                                    onClick={() => {
+                                        if (window.electronAPI) {
+                                            handleSelectFilesElectron();
+                                        } else {
+                                            folderInputRef.current?.click();
+                                        }
+                                    }}>
                                     <ImageIcon className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
                                     <p className="text-sm font-medium group-hover:text-primary transition-colors">Seleccionar Fotos</p>
                                 </div>
@@ -340,49 +391,16 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                                             const dirPath = await window.electronAPI.selectDirectory();
                                             if (dirPath) {
                                                 setLoading(true);
-                                                setProgress({ current: 0, total: 100 });
                                                 try {
                                                     addLog(`Escaneando directorio: ${dirPath}`, "info");
                                                     const result = await window.electronAPI.scanDirectory(dirPath);
-                                                    // ... implementation continues ...
                                                     if (result.success && result.images) {
-                                                        const imagesToProcess = result.images;
-                                                        setProgress({ current: 0, total: imagesToProcess.length });
-
-                                                        const finalImages = [];
-                                                        for (let i = 0; i < imagesToProcess.length; i++) {
-                                                            const img = imagesToProcess[i];
-                                                            if (!img.description && img.path) {
-                                                                addLog(`Analizando [${i + 1}/${imagesToProcess.length}]: ${img.filename}...`, "info");
-                                                                const analysis = await window.electronAPI.analyzeImage(img.path);
-                                                                if (analysis.success && analysis.data) {
-                                                                    finalImages.push({ ...img, ...analysis.data, date_added: new Date().toISOString(), realPath: img.path });
-                                                                    addLog(`IA Completada para ${img.filename}. Etiquetas: ${analysis.data.tags?.length || 0}`, "success");
-                                                                } else {
-                                                                    finalImages.push({ ...img, realPath: img.path });
-                                                                    addLog(`Error al analizar ${img.filename}: ${analysis.error}`, "error");
-                                                                }
-                                                            } else {
-                                                                finalImages.push({ ...img, realPath: img.path });
-                                                            }
-                                                            setProgress(prev => ({ ...prev, current: i + 1 }));
-                                                        }
-                                                        /*
-                                                        addLog("Guardando galería localmente...", "info");
-                                                        const saveResult = await window.electronAPI.saveCsv(`${dirPath}/photos.csv`, finalImages);
-                                                        if (saveResult.success) {
-                                                            addLog("Galería guardada (photos.csv) correctamente.", "success");
-                                                        } else {
-                                                            addLog("No se pudo autoguardar photos.csv: " + saveResult.error, "error");
-                                                        }
-                                                        */
-                                                        onGalleryUpdate([...currentGallery, ...finalImages]);
-                                                        onClose();
+                                                        await processElectronAssets(result.images);
                                                     } else {
                                                         setError(result.error || "Error al escanear.");
                                                     }
-                                                } catch (e: unknown) {
-                                                    setError(e instanceof Error ? e.message : "Error desconocido");
+                                                } catch (e: any) {
+                                                    setError(e.message || "Error desconocido");
                                                 } finally {
                                                     setLoading(false);
                                                 }
@@ -397,7 +415,7 @@ export function GalleryManager({ isOpen, mode, onClose, currentGallery, onGaller
                             </div>
                             <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/*,video/*"
                                 multiple
                                 className="hidden"
                                 ref={folderInputRef}

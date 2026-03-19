@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { PhotoMetadata } from "@/types";
-import { ChevronLeft, ChevronRight, Info, Tag, Calendar, Monitor, FileType, HardDrive, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, Tag, Calendar, Monitor, FileType, HardDrive, Download, Trash2 } from "lucide-react";
 
 interface GalleryViewerProps {
     photos: Partial<PhotoMetadata>[];
+    onDelete?: (photo: Partial<PhotoMetadata>) => void;
 }
 
-export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
+export function GalleryViewer({ photos = [], onDelete }: GalleryViewerProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [prevPhotos, setPrevPhotos] = useState(photos);
 
@@ -37,22 +38,28 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
     }, [handleNext, handlePrev]);
 
     // Helper to get image source
-    const getImageSrc = (p: Partial<PhotoMetadata>) => {
-        if (!p.path) return "";
-        if (p.path.includes('blob:') || p.path.startsWith('data:')) return p.path;
+    const getImageSrc = (path?: string) => {
+        if (!path) return "";
+        if (path.includes('blob:') || path.startsWith('data:')) return path;
+        // Strip any existing protocols to avoid duplication
+        let cleanPath = path
+            .replace(/^file:\/\/\//, '')
+            .replace(/^local-file:\/\//, '')
+            .replace(/^mifoto:\/\/-\//, '')
+            .replace(/^mifoto:\/\/\//, '')
+            .replace(/^mifoto:\/\//, '');
 
-        let cleanPath = p.path.replace(/^file:\/\/\//, '').replace(/^local-file:\/\//, '');
+        // On Windows, ensure we don't end up with /C:/..., we want C:/...
         if (cleanPath.startsWith('/') && cleanPath.match(/^\/[a-zA-Z]:/)) {
             // It's like /C:/Users... which becomes C:/Users...
             cleanPath = cleanPath.substring(1);
         }
-
         // URIs must use forward slashes, replace windows backslashes
         cleanPath = cleanPath.replace(/\\/g, '/');
         // Encode URI components to handle spaces and special chars safely in Chrome network stack
         const parts = cleanPath.split('/');
         const encodedPath = parts.map(p => encodeURIComponent(p)).join('/');
-        return `local-file://${encodedPath}`;
+        return `mifoto://-/${encodedPath}`;
     };
 
 
@@ -80,11 +87,17 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
         if (!photo.path) return;
 
         const link = document.createElement('a');
-        link.href = getImageSrc(photo);
+        link.href = getImageSrc(photo.path);
         link.download = photo.filename || 'download.png';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const handleDelete = () => {
+        if (onDelete && confirm(`¿Estás seguro de que deseas eliminar "${photo.filename}" de la galería?`)) {
+            onDelete(photo);
+        }
     };
 
     return (
@@ -107,18 +120,18 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
                 {/* Navigation Buttons */}
                 <button
                     onClick={handlePrev}
-                    className="absolute left-4 z-10 p-2 rounded-full bg-white/80 hover:bg-white shadow-lg backdrop-blur-sm transition-opacity opacity-0 group-hover:opacity-100"
+                    className="absolute left-4 z-10 p-2.5 rounded-full bg-black/40 hover:bg-primary text-white shadow-xl backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 border border-white/10 hover:scale-110 active:scale-95"
                     title="Anterior (Flecha Izquierda)"
                 >
-                    <ChevronLeft className="h-6 w-6" />
+                    <ChevronLeft className="h-7 w-7" />
                 </button>
 
                 <button
                     onClick={handleNext}
-                    className="absolute right-4 z-10 p-2 rounded-full bg-white/80 hover:bg-white shadow-lg backdrop-blur-sm transition-opacity opacity-0 group-hover:opacity-100"
+                    className="absolute right-4 z-10 p-2.5 rounded-full bg-black/40 hover:bg-primary text-white shadow-xl backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 border border-white/10 hover:scale-110 active:scale-95"
                     title="Siguiente (Flecha Derecha)"
                 >
-                    <ChevronRight className="h-6 w-6" />
+                    <ChevronRight className="h-7 w-7" />
                 </button>
 
                 {/* Counter Badge */}
@@ -126,14 +139,29 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
                     {currentIndex + 1} / {photos.length}
                 </div>
 
-                {/* Main Image */}
-                <div className="relative w-full h-full p-4">
+                {/* Main Image or Video */}
+                <div className="relative w-full h-full p-4 flex items-center justify-center">
                     {photo.path && (
-                        <img
-                            src={getImageSrc(photo)}
-                            alt={photo.filename || "Gallery Image"}
-                            className="object-contain w-full h-full"
-                        />
+                        ['mp4', 'webm', 'mov', 'avi'].includes((photo.format || '').toLowerCase()) ? (
+                            <video
+                                key={`video-${photo.path || currentIndex}`}
+                                src={getImageSrc(photo.path)}
+                                className="w-full h-full object-contain drop-shadow-2xl bg-black/5"
+                                controls
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                preload="auto"
+                            />
+                        ) : (
+                            <img
+                                key={photo.path || currentIndex}
+                                src={getImageSrc(photo.path)}
+                                alt={photo.filename || "Gallery Image"}
+                                className="object-contain w-full h-full drop-shadow-2xl"
+                            />
+                        )
                     )}
                 </div>
             </div>
@@ -141,9 +169,20 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
             {/* Right: Metadata Panel */}
             <div className="w-full lg:w-96 bg-card border rounded-xl shadow-sm flex flex-col overflow-hidden">
                 <div className="p-4 border-b bg-muted/30">
-                    <h3 className="font-semibold text-lg truncate" title={photo.filename}>
-                        {photo.filename}
-                    </h3>
+                    <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-lg truncate" title={photo.filename}>
+                            {photo.filename}
+                        </h3>
+                        {onDelete && (
+                            <button
+                                onClick={handleDelete}
+                                className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                                title="Eliminar de la galería"
+                            >
+                                <Trash2 className="h-5 w-5" />
+                            </button>
+                        )}
+                    </div>
                     <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span className="flex items-center gap-1.5 font-medium">
                             <FileType className="h-3 w-3 text-orange-500" /> {photo.format?.toUpperCase()}
@@ -170,7 +209,7 @@ export function GalleryViewer({ photos = [] }: GalleryViewerProps) {
                             <span className="text-xs text-muted-foreground block mb-1">Resolución</span>
                             <div className="font-medium flex items-center gap-1">
                                 <Monitor className="h-3 w-3 text-indigo-500" />
-                                {photo.resolution || `${photo.width} x ${photo.height}`}
+                                {photo.resolution || (photo.width && photo.height ? `${photo.width} x ${photo.height}` : 'Desconocida')}
                             </div>
                         </div>
                         <div className="p-3 bg-muted/20 rounded-lg">

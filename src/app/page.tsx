@@ -50,6 +50,12 @@ export default function Dashboard() {
     setPhotos(newPhotos);
   };
 
+  const handleDeletePhoto = (photoToDelete: Partial<PhotoMetadata>) => {
+    const newPhotos = photos.filter(p => p.path !== photoToDelete.path);
+    setPhotos(newPhotos);
+    localStorage.setItem("gallery_photos", JSON.stringify(newPhotos));
+  };
+
   const handleDirectDownload = () => {
     if (photos.length === 0) {
       alert("No hay fotos para descargar.");
@@ -157,7 +163,7 @@ export default function Dashboard() {
             <p className="text-muted-foreground">No hay fotos cargadas. Selecciona una galería o actualiza para comenzar.</p>
           </div>
         ) : (
-          <GalleryGrid photos={photos} />
+          <GalleryGrid photos={photos} onDelete={handleDeletePhoto} />
         )}
       </div>
 

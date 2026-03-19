@@ -24,6 +24,12 @@ export default function GalleryPage() {
         }
     }, []);
 
+    const handleDeletePhoto = (photoToDelete: Partial<PhotoMetadata>) => {
+        const newPhotos = photos.filter(p => p.path !== photoToDelete.path);
+        setPhotos(newPhotos);
+        localStorage.setItem("gallery_photos", JSON.stringify(newPhotos));
+    };
+
     const filteredPhotos = useMemo(() => {
         return photos.filter(photo => {
             // Search Text
@@ -73,7 +79,7 @@ export default function GalleryPage() {
             />
 
             <div className="flex-1 min-h-0">
-                <GalleryViewer photos={filteredPhotos} />
+                <GalleryViewer photos={filteredPhotos} onDelete={handleDeletePhoto} />
             </div>
         </div>
     );

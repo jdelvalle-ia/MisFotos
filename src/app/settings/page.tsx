@@ -1,6 +1,33 @@
+"use client";
+
 import { ConnectionStatusWidget } from "@/components/settings/ConnectionStatusWidget";
+import { MaintenanceWidget } from "@/components/settings/MaintenanceWidget";
+import { useState, useEffect } from "react";
+import { PhotoMetadata } from "@/types";
+import { useConsole } from "@/context/ConsoleContext";
 
 export default function SettingsPage() {
+    const [photos, setPhotos] = useState<Partial<PhotoMetadata>[]>([]);
+    const { addLog } = useConsole();
+
+    useEffect(() => {
+        const saved = localStorage.getItem("gallery_photos");
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    setPhotos(parsed);
+                }
+            } catch (e) {
+                console.error("Failed to load gallery", e);
+            }
+        }
+    }, []);
+
+    const handleGalleryUpdate = (newPhotos: Partial<PhotoMetadata>[]) => {
+        setPhotos(newPhotos);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -9,9 +36,7 @@ export default function SettingsPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
                 <ConnectionStatusWidget />
-
-
-
+                <MaintenanceWidget photos={photos} onGalleryUpdate={handleGalleryUpdate} />
             </div>
         </div>
     );
